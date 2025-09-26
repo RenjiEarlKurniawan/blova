@@ -1,14 +1,14 @@
 package com.blova.blog.service;
 
 import com.blova.blog.entity.Post;
+import com.blova.blog.repository.PostRepository;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.time.Instant;
+
 
 
 @Service
@@ -16,50 +16,54 @@ import java.util.List;
 @NoArgsConstructor
 public class PostService {
 
-    Post post1 = new Post(1, "title1", "slug1");
-    Post post2 = new Post(2, "title2", "slug2");
-    List<Post> posts = new ArrayList<>(Arrays.asList(post1, post2));
+    @Autowired
+    PostRepository postRepository;
 
-    public List<Post> getPosts(){
-        return posts;
+
+    public Iterable<Post> getPosts() {
+        return postRepository.findAll();
     }
 
     public Post getPostBySlug(String slug){
-        return posts.stream().filter(p -> p.getSlug().equals(slug)).findFirst().orElse(null);
+        return postRepository.findBySlug(slug).orElse(null);
     }
 
     public Post createPost(Post post){
-        posts.add(post);
-        return post;
+        post.setCreatedAt(Instant.now().getEpochSecond());
+        return postRepository.save(post);
+
     }
 
-    public Post updatePostBySlug(String slug, Post sentPostByUser){
-        Post savedPost = posts.stream().filter(p->p.getSlug().equals(slug)).findFirst().orElse(null);
+    public Post updatePostBySlug(String slug, Post post){
+        Post savedPost = postRepository.findBySlug(slug).orElse(null);
+
         if(savedPost == null){
             return null;
         }
-        posts.remove(savedPost);
-        savedPost.setTitle(sentPostByUser.getTitle());
-        savedPost.setSlug(sentPostByUser.getSlug());
-        posts.add(savedPost);
-        return savedPost;
+
+        post.setId(savedPost.getId());
+
+        return postRepository.save(post);
     }
 
     public Boolean deletedPostById(Integer id){
-        Post savedPost = posts.stream().filter(p -> p.getId().equals(id)).findFirst().orElse(null);
-        if(savedPost == null){
+        Post post = postRepository.findById(id).orElse(null);
+        if(post == null){
             return false;
         }
-        posts.remove(savedPost);
+        postRepository.deleteById(id);
         return true;
     }
 
     public Post publishPost(Integer id){
-        Post savedPost = posts.stream().filter(p -> p.getId().equals(id)).findFirst().orElse(null);
-        if(savedPost == null){
+        Post post = postRepository.findById(id).orElse(null);
+        if(post == null) {
             return null;
         }
-        savedPost.setPublished(true);
-        return savedPost;
+        post.setPublished(true);
+        post.setPublishedAt(Instant.now().getEpochSecond());
+        return postRepository.save(post);
     }
 }
+
+
